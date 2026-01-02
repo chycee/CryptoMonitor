@@ -1,0 +1,32 @@
+# CryptoMonitor Configuration Example
+# Copy this to config.yaml and fill in secrets
+
+app:
+  name: "CryptoMonitor"
+  version: "1.0.0"
+
+api:
+  upbit:
+    ws_url: "wss://api.upbit.com/websocket/v1"
+    rest_url: "https://api.upbit.com"
+  
+  bitget:
+    ws_url: "wss://ws.bitget.com/v2/ws/public"
+    rest_url: "https://api.bitget.com"
+    # API Keys should be managed via Environment Variables or added here in local config
+    access_key: "YOUR_ACCESS_KEY"
+    secret_key: "YOUR_SECRET_KEY"
+    passphrase: "YOUR_PASSPHRASE"
+  
+  exchange_rate:
+    url: "https://query1.finance.yahoo.com/v8/finance/chart/USDKRW=X"
+    poll_interval_sec: 60
+
+ui:
+  update_interval_ms: 100
+  history_days: 10
+  gap_threshold: "5.0" # Use string for decimal precision in YAML if needed
+  theme: "dark"
+
+logging:
+  level: "info"

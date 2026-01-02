@@ -1,0 +1,17 @@
+# Binaries
+cryptomonitor
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Configuration (Secrets)
+configs/config.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Go
+go.work
