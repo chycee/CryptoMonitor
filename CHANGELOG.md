@@ -1,8 +1,4 @@
-# CHANGELOG
-
-프로젝트의 모든 변경 사항을 시간순으로 기록합니다.
-
----
+# Changelog
 
 ## [1.0.0] - 2026-01-03
 
@@ -32,6 +28,7 @@ Clean Architecture 기반의 확장 가능한 프로젝트 구조를 설계하�
 - **문서 구조 최종 최적화**: README의 파편화된 기술 내용(Key Features, 구조, 시작 가이드)을 Workflow 및 API Reference로 분산 배치하여 README를 순수 **프로젝트 포털(Portal Hub)**로 정제.
 - **SSOT(Single Source of Truth) 확립**: 모든 개발 지침은 Workflow로, 모든 모델 명세는 API Reference로 단일화하여 문서 간 중복 및 불일치 위험 제거.
 - **전수 감사 및 정제 (Full Audit)**: 프로젝트 명칭 통일 (`CryptoMonitor`), 모든 문서의 상대 경로화, 빌드/테스트 전수 검증을 통해 배포 준비 완료.
+- **환율 소스 최적화**: 김치 프리미엄 계산 정밀도를 위해 환율 공급 소스를 Yahoo Finance에서 **Upbit (Dunamu)**로 변경 결정.
 
 ---
 

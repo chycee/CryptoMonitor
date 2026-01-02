@@ -22,7 +22,9 @@ func NewExchangeRateClient(onUpdate func(decimal.Decimal)) *ExchangeRateClient {
 
 // Start begins polling for exchange rate updates
 func (c *ExchangeRateClient) Start(ctx context.Context) error {
-	// TODO: Implement Yahoo Finance API polling using ctx for cancellation
+	// TODO: Implement with Upbit (Dunamu) Forex API
+	// Endpoint: https://quotation-api-cdn.dunamu.com/v1/forex/recent?codes=FRX.KRWUSD
+	// using ctx for cancellation
 	return nil
 }
 

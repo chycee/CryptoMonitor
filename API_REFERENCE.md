@@ -57,7 +57,7 @@
 의존성 역전(DI)을 위한 추상화 레이어
 
 - **ExchangeWorker**: WebSocket 기반 시세 수집기 규격
-- **ExchangeRateProvider**: 외부 환율 소스 공급자 규격
+- **ExchangeRateProvider**: Upbit (Dunamu) 환율 소스 공급자 규격
 - **MarketDataRepository**: 데이터 영속성 관리 규격 (예정)
 
 ### 1.4 Errors (errors.go)

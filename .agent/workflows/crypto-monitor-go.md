@@ -240,7 +240,7 @@ graph TD
 | 2-3 | `bitget_worker.go` (Futures) | 콘솔 출력 |
 
 ### Phase 3: 환율 API ⏳
-- [ ] Yahoo Finance 연동
+- [ ] Upbit (Dunamu) 환율 연동
 - [ ] 김치 프리미엄 계산 검증
 
 ### Phase 4: UI ⏳
