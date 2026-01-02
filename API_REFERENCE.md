@@ -2,19 +2,19 @@
 
 > 시스템의 도메인 모델, 서비스 인터페이스 및 인프라 명세
 > 
-> **⚠️ 핵심 원칙:**
-> - **Infra**: 오직 string -> Decimal 변환(Parsing)만 담당.
-> - **Domain/Service**: 모든 비즈니스 연산(Premium, Gap 등) 담당.
-> - **S-Class Standard**: DIP 준수, 높은 응집도, 낮은 결합도, 일관된 패턴 유지.
-> - **Production Stability**: 지수 백오프 재연결, ENV 기반 보안, 수식 유닛 테스트 필수.
+> **핵심 원칙:**
+> - **Infra**: 외부 데이터 파싱 담당.
+> - **Domain/Service**: 비즈니스 로직 및 연산 담당.
+> - **Architecture**: DIP 준수, 계층 간 결합도 최소화.
+> - **Stability**: 자동 재연결, 보안 관리, 유닛 테스트 필수.
 
 ---
 
 ## 시스템 주요 기능 (Key Features)
-- **실시간 데이터 스트리밍**: WebSocket 기반의 저지연 시세 수집 (Upbit, Bitget)
-- **금융급 정밀도**: 모든 연산에 `decimal.Decimal` 적용 (부동 소수점 오차 원천 차단)
-- **전문가 아키텍처**: 클린 아키텍처 기반의 인터페이스 분리 및 의존성 주입 (DIP 준수)
-- **우아한 제어**: Context 기반의 고루틴 제어 및 Graceful Shutdown
+- **실시간 데이터 수집**: WebSocket 기반 시세 스트리밍 (Upbit, Bitget)
+- **정밀 연산**: `decimal.Decimal` 기반 수식 처리
+- **구조적 설계**: 인터페이스 기반의 의존성 관리 (DIP)
+- **안정적 종료**: Context 기반 Graceful Shutdown
 
 ---
 

@@ -6,13 +6,13 @@
 
 ## [1.0.0] - 2026-01-03
 
-### 🏛️ 아키텍처 스켈레톤 완성과 검증 (Masterpiece Milestone)
-현업 전문가 수준의 **확장 가능하고 견고한 Go 프로젝트 뼈대**를 구축했습니다.
+### 🏗️ 프로젝트 초기 설정 및 아키텍처 구축
+Clean Architecture 기반의 확장 가능한 프로젝트 구조를 설계하고 기초 코드를 구현했습니다.
 
-#### 1. 전문가 설계 원칙 (Professional Standards)
-- **S-Class 아키텍처**: DIP(Ports & Adapters) 준수 및 서비스-인프라 간 완전 결합도 제거.
-- **전역 상태 금지**: 생성자 주입(DI) 방식을 통한 의존성 관리 및 패키지 레벨 변수 제거.
-- **운영 급 안정성**: WebSocket 지수 백오프 재연결, 비밀 정보 관리(ENV優先), 테스트 강제화 원칙 수립.
+#### 1. 설계 및 구조 (Architecture & Standards)
+- **Layered Architecture**: Domain, Service, Infra 레이어 분리 및 의존성 역전(DIP) 적용.
+- **의존성 주입 (DI)**: 생성자를 통한 의존성 주입으로 전역 상태 배제.
+- **안정성 가이드**: WebSocket 재연결(Exponential Backoff), 보안(ENV), 유닛 테스트 원칙 수립.
 - **AI 거버넌스**: 추측 금지, 설명 책임(왜/지금/영향), AI 친화적 코드 규칙 도입.
 
 #### 2. 기술 스택 및 라이프사이클

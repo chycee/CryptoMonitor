@@ -6,24 +6,24 @@ description: CryptoMonitor Go 개발 워크플로우 - 문서 확인 후 코딩
 
 > ⚠️ 이 문서를 읽지 않고 코딩하면 **실패한 작업**으로 간주합니다.
 
-## 💡 개발 철학 및 원칙 (Philosophy & Principles)
+## 💡 설계 및 개발 원칙 (Philosophy & Principles)
 
-### 🥇 S-Class Structure (Core Principles)
-- **Dependency Inversion (DIP)**: 코어 로직은 인터페이스(Port)로만 소통하며, 구체적인 구현(Adapter)에 의존하지 않는다. 서비스는 인프라를 몰라야 한다.
-- **최소 종속성 (Minimalism)**: 외부 라이브러리는 유지보수/보안 검토 후 최소화하여 도입하며, 직접 구현 가능한 경량 로직은 외부 의존성을 지양한다.
-- **No Global State**: 패키지 레벨 전역 변수 사용을 엄격히 금지하며, 모든 의존성은 생성자를 통해 주입(DI)한다.
+### 🥇 핵심 구조 (Core Principles)
+- **의존성 역전 (DIP)**: 서비스 로직은 인터페이스를 통해 통신하며, 인프라 구현체에 의존하지 않는다.
+- **최소 종속성 (Minimalism)**: 외부 라이브러리 사용을 최소화하고, 직접 구현 가능한 로직은 표준 라이브러리를 우선 활용한다.
+- **상태 관리**: 패키지 레벨 전역 변수 사용을 금지하고 생성자를 통해 필요한 객체를 주입받는다.
 
-### 🧠 개발 신조 (Proverbs)
-- **Simplicity over Features**: 기능의 양보다 구조의 간결함을 신봉한다.
-- **Practical Abstraction**: YAGNI 원칙에 따라 "미래를 위한" 과도한 추상화를 경계한다. 추상화는 오직 테스트와 유지보수를 위해서만 존재한다.
-- **Bold Deletion**: 복잡성을 유발하는 기능이나 불필요한 코드는 과감히 제거하여 시스템의 순수성을 유지한다.
+### 🧠 개발 지침 (Proverbs)
+- **단순성 우선**: 기능 추가보다 구조의 명확함을 중시한다.
+- **실용적 추상화**: 미래를 위한 과도한 추상화를 지양하고, 테스트와 유지보수가 필요한 시점에 도입한다.
+- **코드 정제**: 불필요한 코드와 복잡성을 유발하는 로직은 주기적으로 제거한다.
 
 ## 🚫 금지 및 제한 사항 (Restrictions)
 - **유틸리티 제한**: `utils`, `helper` 모듈에 비즈니스 로직(계산, 판단) 삽입 금지. 순수 연산 함수(Pure Functions)는 Core/Domain 레이어에 배치한다.
 - **API 혼용 금지**: 레이어 간 소통 시 내부 모델과 외부 API 모델을 엄격히 분리한다.
 
-## 🤖 AI 자율 판단 규칙 (Governance)
-AI는 사용자가 경력 개발자가 아님을 인지하고, 전문가로서 시스템의 안정성을 책임진다.
+## 🤖 AI 협업 지침 (Collaboration)
+AI는 전문가로서 시스템의 안정성을 보장하며 다음 규칙을 준수한다.
 
 ### 1. 자율 판단 허용 범위
 - 기능 구현에 필수적인 보조 코드 (에러 처리, 타입 정의 등)
@@ -132,19 +132,17 @@ go build -o cryptomonitor ./cmd/app
 - **비밀 정보 관리 (Secrets)**: API Key 등 민감 정보는 절대 코드나 Git에 포함하지 않는다. 환경 변수(ENV)를 최우선으로 하며, `.gitignore` 처리된 설정을 보조로 사용한다.
 - **테스트 강제 (Test-Driven)**: 특히 `Domain` 레이어의 수식 및 연산 로직은 반드시 유닛 테스트(`*_test.go`)를 동반하여 숫자의 무결성을 입증해야 한다.
 
-### 💎 전문가급 추가 규칙 (Professional Tips)
+### 💎 개발 가이드 (Best Practices)
 
-1. **Decimal 연산 책임의 위치**
-   - **Infra Layer**: 오직 외부 데이터 수집 및 **파싱**(`string` -> `Decimal`)만 담당. 연산 금지.
-   - **Domain/Service Layer**: 모든 **비즈니스 수식**(프리미엄, Gap, 등락 등) 수행. 로직의 중앙화 보장.
+1. **Decimal 연산 책임**
+   - **Infra Layer**: 데이터 수집 및 파싱(`string` -> `Decimal`) 담당.
+   - **Domain/Service Layer**: 가격/프리미엄 등 모든 비즈니스 수식 연산 수행.
 
-2. **Context 기반 로깅 (Context-Aware Logging)**
-   - 단순히 `slog.Info()` 대신 **`slog.InfoContext(ctx, ...)`** 사용 권장.
-   - 특히 Infra 레이어의 네트워크 요청 로그에는 반드시 `ctx`를 전달하여 생명주기 및 트래킹을 일치시킴.
+2. **Context 기반 로깅**
+   - 모든 로그 출력 시 `slog.InfoContext(ctx, ...)`를 사용하여 실행 문맥을 유지한다.
 
-3. **Config 계층 및 불변성**
-   - 설정은 앱 시작 시 한 번만 로드(`LoadConfig`)하며, 이후에는 **Read-Only**로 취급.
-   - `internal/infra/config.go`에 정의된 구조체 계층을 엄격히 준수.
+3. **Config 불변성**
+   - 설정은 시작 시 로드하며, 이후 실행 중에는 수정하지 않는다(Read-Only).
 
 ### 명명 규칙
 - **패키지명**: 소문자 (예: `priceservice` ❌ → `service` ✅)
