@@ -1,42 +1,73 @@
-# CryptoMonitor
+# 🚀 CryptoMonitor
 
-## 주요 기능 (Features)
-- **실시간 시세 수집**: 업비트(원화), 비트겟(현물/선물) WebSocket 연동
-- **정밀 연산**: `decimal` 기반의 오차 없는 가격 및 프리미엄/Gap 계산
-- **자동 복구**: 지수 백오프(Exponential Backoff) 기반 WebSocket 재연결
-- **알림 기능**: 가격 돌파 및 시세 급변동 알림 (구현 예정)
+실시간 암호화폐 시세 모니터링 및 김치 프리미엄 계산을 위한 고성능 Go 백엔드 엔진입니다.
 
-## 프로젝트 구조
+## 📋 개요 (Overview)
 
-```
-CryptoMonitorGo/
-├── cmd/app/         # 애플리케이션 진입점
-├── internal/
-│   ├── domain/      # 엔티티, 인터페이스, 순수 로직
-│   ├── service/     # 비즈니스 로직, 상태 관리
-│   └── infra/       # 외부 API, WebSocket 연동
-├── configs/         # 설정 파일
-└── docs/            # 문서
-```
+CryptoMonitor는 업비트(Upbit)와 비트겟(Bitget)의 WebSocket API를 연동하여 실시간 시세를 수집하고, 거래소 간 가격 차이(Premium/Gap)를 정밀하게 계산하는 시스템입니다. 비동기 파이프라인 구조를 통해 대량의 시세 데이터를 지연 없이 처리합니다.
 
-## 빠른 시작
+## 🔄 시스템 워크플로우 (Workflow)
 
-```bash
-# 의존성 설치
-go mod tidy
+```mermaid
+graph TD
+    subgraph Infrastructure
+        U[Upbit Worker] -->|Ticker| C[Price Ticker Channel]
+        BS[Bitget Spot Worker] -->|Ticker| C
+        BF[Bitget Futures Worker] -->|Ticker| C
+        ER[Exchange Rate Client] -->|USD/KRW| PS[Price Service]
+    end
 
-# 설정 파일 생성
-cp configs/config.example.yaml configs/config.yaml
-# config.yaml 파일을 편집하여 API 키 설정
+    subgraph Service
+        C -->|Async Stream| PS
+        PS -->|Process & Calculate| MD[(Market Data Map)]
+    end
 
-# 빌드 및 실행
-go build -o bin/cryptomonitor ./cmd/app
-./bin/cryptomonitor
+    subgraph GUI_Layer
+        PS -.->|Future Phase| UI[Interactive UI]
+    end
+
+    style C fill:#f96,stroke:#333,stroke-width:2px
+    style PS fill:#bbf,stroke:#333,stroke-width:2px
 ```
 
-## 관련 문서 (Docs)
-- [아키텍처 문서 (Architecture)](./docs/ARCHITECTURE.md)
-- [개발 워크플로우 (Workflow)](./.agent/workflows/crypto-monitor-go.md)
-- [기여 가이드 (Contributing)](./CONTRIBUTING.md)
-- [변경 이력 (Changelog)](./CHANGELOG.md)
+## ⚙️ 설정 가이드 (Configuration)
 
+`configs/config.yaml` 파일을 통해 시스템을 제어합니다.
+
+```yaml
+api:
+  upbit:
+    symbols: ["BTC", "ETH"] # KRW- 제외 코드
+  bitget:
+    symbols:
+      BTC: "BTCUSDT"        # 통합기호 : 비트겟 ID
+```
+
+## 🧪 데이터 모델 (Domain Models)
+
+### `Ticker`
+각 거래소로부터 수신되는 가공된 공통 시세 데이터입니다.
+- `Symbol`: 코인 이름 (예: BTC)
+- `Price`: 현재가 (Decimal)
+- `Exchange`: 소속 거래소 (UPBIT, BITGET_S, BITGET_F)
+- `Precision`: 가격 표시 소수점 자리수
+
+### `MarketData`
+`PriceService`에서 관리되는 최종 통합 정보입니다.
+- `Upbit`: 업비트 시세 정보
+- `BitgetS`: 비트겟 현물 정보
+- `BitgetF`: 비트겟 선물 정보
+- `Premium`: 김치 프리미엄 (%)
+
+## 🚩 주요 마일스톤 (Milestones)
+
+- **v1.0.1 (Current)**: 비동기 시세 파이프라인, 동적 심볼 설정, 봇 감지 회피(User-Agent) 및 안정성 강화.
+- **v1.0.0**: 프로젝트 초기 릴리스 및 업비트/비트겟 웹소켓 기본 연동.
+
+## 🛠️ 개발 문서
+
+- [시스템 아키텍처 (Architecture)](./docs/ARCHITECTURE.md): 계층 구조 및 비동기 데이터 흐름
+- [기술 명세서 (Specifications)](./docs/SPECIFICATIONS.md): API, 테스트, 모니터링 및 향후 로드맵
+
+---
+*본 프로젝트는 Advanced Agentic Coding 실습의 일환으로 고도화되었습니다.*

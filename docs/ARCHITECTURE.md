@@ -77,12 +77,13 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant WS as WebSocket Workers
-    participant SVC as PriceService
+    participant CH as Ticker Channel (Async)
+    participant SVC as PriceService (Processor)
     participant DOM as MarketData
     
-    WS->>SVC: UpdateUpbit(tickers)
-    WS->>SVC: UpdateBitget(tickers)
-    SVC->>DOM: 데이터 병합/계산
+    WS->>CH: Send Ticker
+    CH->>SVC: Process Stream
+    SVC->>DOM: 데이터 병합/계산 (Locked)
     SVC-->>UI: GetAllData()
 ```
 

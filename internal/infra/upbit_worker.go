@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -75,20 +76,20 @@ type upbitTickerResponse struct {
 
 // UpbitWorker handles Upbit WebSocket connection
 type UpbitWorker struct {
-	symbols   []string
-	onTicker  func([]*domain.Ticker)
-	conn      *websocket.Conn
-	mu        sync.RWMutex
-	connected bool
-	cancel    context.CancelFunc
-	wg        sync.WaitGroup
+	symbols    []string
+	tickerChan chan<- []*domain.Ticker
+	conn       *websocket.Conn
+	mu         sync.RWMutex
+	connected  bool
+	cancel     context.CancelFunc
+	wg         sync.WaitGroup
 }
 
 // NewUpbitWorker creates a new Upbit worker
-func NewUpbitWorker(symbols []string, onTicker func([]*domain.Ticker)) *UpbitWorker {
+func NewUpbitWorker(symbols []string, tickerChan chan<- []*domain.Ticker) *UpbitWorker {
 	return &UpbitWorker{
-		symbols:  symbols,
-		onTicker: onTicker,
+		symbols:    symbols,
+		tickerChan: tickerChan,
 	}
 }
 
@@ -166,7 +167,10 @@ func (w *UpbitWorker) connect(ctx context.Context) error {
 		HandshakeTimeout: 10 * time.Second,
 	}
 
-	conn, _, err := dialer.DialContext(ctx, upbitWSURL, nil)
+	header := make(http.Header)
+	header.Add("User-Agent", DefaultUserAgent)
+
+	conn, _, err := dialer.DialContext(ctx, upbitWSURL, header)
 	if err != nil {
 		return fmt.Errorf("dial failed: %w", err)
 	}
@@ -191,6 +195,11 @@ func (w *UpbitWorker) connect(ctx context.Context) error {
 
 // subscribe sends subscription message for all symbols
 func (w *UpbitWorker) subscribe() error {
+	if len(w.symbols) > 50 {
+		slog.Warn("Upbit symbol limit exceeded (max 50)", slog.Int("count", len(w.symbols)))
+		w.symbols = w.symbols[:50]
+	}
+
 	// Build codes list (e.g., ["KRW-BTC", "KRW-ETH"])
 	codes := make([]string, len(w.symbols))
 	for i, symbol := range w.symbols {
@@ -290,8 +299,12 @@ func (w *UpbitWorker) handleMessage(message []byte) {
 		ticker.HistoricalLow = &low
 	}
 
-	if w.onTicker != nil {
-		w.onTicker([]*domain.Ticker{ticker})
+	if w.tickerChan != nil {
+		select {
+		case w.tickerChan <- []*domain.Ticker{ticker}:
+		default:
+			slog.Warn("Upbit ticker channel full, dropping data")
+		}
 	}
 }
 

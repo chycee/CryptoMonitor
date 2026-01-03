@@ -6,8 +6,7 @@ cryptomonitor
 *.so
 *.dylib
 
-# Configuration (Secrets)
-configs/config.yaml
+
 
 # OS files
 .DS_Store
@@ -16,7 +15,6 @@ Thumbs.db
 # Go
 go.work
 
-# Development Documentation (Local Only)
-CHANGELOG.md
-API_REFERENCE.md
+
+
 

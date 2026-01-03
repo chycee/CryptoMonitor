@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -20,20 +21,20 @@ import (
 
 // BitgetFuturesWorker handles Bitget Futures WebSocket connection
 type BitgetFuturesWorker struct {
-	symbols   map[string]string // unified -> instId (e.g., "BTC" -> "BTCUSDT")
-	onTicker  func([]*domain.Ticker)
-	conn      *websocket.Conn
-	mu        sync.RWMutex
-	connected bool
-	cancel    context.CancelFunc
-	wg        sync.WaitGroup
+	symbols    map[string]string // unified -> instId (e.g., "BTC" -> "BTCUSDT")
+	tickerChan chan<- []*domain.Ticker
+	conn       *websocket.Conn
+	mu         sync.RWMutex
+	connected  bool
+	cancel     context.CancelFunc
+	wg         sync.WaitGroup
 }
 
 // NewBitgetFuturesWorker creates a new Bitget Futures worker
-func NewBitgetFuturesWorker(symbols map[string]string, onTicker func([]*domain.Ticker)) *BitgetFuturesWorker {
+func NewBitgetFuturesWorker(symbols map[string]string, tickerChan chan<- []*domain.Ticker) *BitgetFuturesWorker {
 	return &BitgetFuturesWorker{
-		symbols:  symbols,
-		onTicker: onTicker,
+		symbols:    symbols,
+		tickerChan: tickerChan,
 	}
 }
 
@@ -92,7 +93,11 @@ func (w *BitgetFuturesWorker) connectionLoop(ctx context.Context) {
 
 func (w *BitgetFuturesWorker) connect(ctx context.Context) error {
 	dialer := websocket.Dialer{HandshakeTimeout: 10 * time.Second}
-	conn, _, err := dialer.DialContext(ctx, bitgetFuturesWSURL, nil)
+
+	header := make(http.Header)
+	header.Add("User-Agent", DefaultUserAgent)
+
+	conn, _, err := dialer.DialContext(ctx, bitgetFuturesWSURL, header)
 	if err != nil {
 		return fmt.Errorf("dial failed: %w", err)
 	}
@@ -114,6 +119,9 @@ func (w *BitgetFuturesWorker) connect(ctx context.Context) error {
 }
 
 func (w *BitgetFuturesWorker) subscribe() error {
+	if len(w.symbols) > 50 {
+		slog.Warn("Bitget Futures symbol limit exceeded (max 50)", slog.Int("count", len(w.symbols)))
+	}
 	args := make([]bitgetSubscribeArg, 0, len(w.symbols))
 	for _, instId := range w.symbols {
 		args = append(args, bitgetSubscribeArg{
@@ -236,8 +244,12 @@ func (w *BitgetFuturesWorker) handleMessage(message []byte) {
 		tickers = append(tickers, ticker)
 	}
 
-	if len(tickers) > 0 && w.onTicker != nil {
-		w.onTicker(tickers)
+	if len(tickers) > 0 && w.tickerChan != nil {
+		select {
+		case w.tickerChan <- tickers:
+		default:
+			slog.Warn("Bitget Futures ticker channel full, dropping data")
+		}
 	}
 }
 

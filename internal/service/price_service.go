@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"sort"
 	"sync"
 
@@ -14,6 +15,7 @@ type PriceService struct {
 	mu           sync.RWMutex
 	marketData   map[string]*domain.MarketData
 	exchangeRate decimal.Decimal
+	tickerChan   chan []*domain.Ticker
 }
 
 // NewPriceService creates a new PriceService instance
@@ -21,6 +23,7 @@ func NewPriceService() *PriceService {
 	return &PriceService{
 		marketData:   make(map[string]*domain.MarketData),
 		exchangeRate: decimal.Zero,
+		tickerChan:   make(chan []*domain.Ticker, 1000), // 버스트 대응을 위한 충분한 버퍼
 	}
 }
 
@@ -66,24 +69,28 @@ func (s *PriceService) GetExchangeRate() decimal.Decimal {
 	return s.exchangeRate
 }
 
-// UpdateUpbit updates Upbit ticker data
-func (s *PriceService) UpdateUpbit(tickers []*domain.Ticker) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for _, ticker := range tickers {
-		data, exists := s.marketData[ticker.Symbol]
-		if !exists {
-			data = &domain.MarketData{Symbol: ticker.Symbol}
-			s.marketData[ticker.Symbol] = data
-		}
-		data.Upbit = ticker
-		s.calculatePremium(data)
-	}
+// GetTickerChan returns the channel for incoming ticker updates
+func (s *PriceService) GetTickerChan() chan []*domain.Ticker {
+	return s.tickerChan
 }
 
-// UpdateBitget updates Bitget ticker data
-func (s *PriceService) UpdateBitget(tickers []*domain.Ticker) {
+// StartTickerProcessor starts a background goroutine to process tickers from the channel
+func (s *PriceService) StartTickerProcessor(ctx context.Context) {
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case tickers := <-s.tickerChan:
+				s.ProcessTickers(tickers)
+			}
+		}
+	}()
+}
+
+// ProcessTickers handles a slice of tickers and updates market data.
+// It is thread-safe and calculates premium automatically.
+func (s *PriceService) ProcessTickers(tickers []*domain.Ticker) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -95,6 +102,8 @@ func (s *PriceService) UpdateBitget(tickers []*domain.Ticker) {
 		}
 
 		switch ticker.Exchange {
+		case "UPBIT":
+			data.Upbit = ticker
 		case "BITGET_S":
 			data.BitgetS = ticker
 		case "BITGET_F":

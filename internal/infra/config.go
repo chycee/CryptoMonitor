@@ -7,6 +7,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	// DefaultUserAgent is a browser-like user agent string to avoid bot detection
+	DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
+
 // Config는 애플리케이션의 모든 설정을 담습니다.
 // LoadConfig로 로드된 후에는 스레드 안전성을 위해 읽기 전용으로 다뤄야 합니다.
 type Config struct {
@@ -17,17 +22,19 @@ type Config struct {
 
 	API struct {
 		Upbit struct {
-			WSURL     string `yaml:"ws_url"`
-			RestURL   string `yaml:"rest_url"`
-			AccessKey string `yaml:"access_key"`
-			SecretKey string `yaml:"secret_key"`
+			WSURL     string   `yaml:"ws_url"`
+			RestURL   string   `yaml:"rest_url"`
+			AccessKey string   `yaml:"access_key"`
+			SecretKey string   `yaml:"secret_key"`
+			Symbols   []string `yaml:"symbols"`
 		} `yaml:"upbit"`
 		Bitget struct {
-			WSURL      string `yaml:"ws_url"`
-			RestURL    string `yaml:"rest_url"`
-			AccessKey  string `yaml:"access_key"`
-			SecretKey  string `yaml:"secret_key"`
-			Passphrase string `yaml:"passphrase"`
+			WSURL      string            `yaml:"ws_url"`
+			RestURL    string            `yaml:"rest_url"`
+			AccessKey  string            `yaml:"access_key"`
+			SecretKey  string            `yaml:"secret_key"`
+			Passphrase string            `yaml:"passphrase"`
+			Symbols    map[string]string `yaml:"symbols"`
 		} `yaml:"bitget"`
 		ExchangeRate struct {
 			URL             string `yaml:"url"`

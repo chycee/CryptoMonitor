@@ -99,11 +99,44 @@ func TestExchangeRateClient_EmptyResponse(t *testing.T) {
 	client := NewExchangeRateClientWithConfig(nil, server.URL, 1)
 
 	err := client.fetchRate(context.Background())
-	if err != nil {
-		t.Errorf("Empty response should not return error: %v", err)
+	if err == nil {
+		t.Error("Empty response should return error")
 	}
 
 	if !client.GetRate().IsZero() {
 		t.Error("Rate should remain zero on empty response")
+	}
+}
+
+func TestExchangeRateClient_RetryOnFailure(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount < 3 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		mockResp := []dunamuResponse{{BasePrice: 1380.50}}
+		body, _ := json.Marshal(mockResp)
+		w.WriteHeader(http.StatusOK)
+		w.Write(body)
+	}))
+	defer server.Close()
+
+	client := NewExchangeRateClientWithConfig(nil, server.URL, 1)
+
+	// Fetch rate (should retry 2 times and succeed on 3rd)
+	err := client.fetchRate(context.Background())
+	if err != nil {
+		t.Fatalf("fetchRate should succeed after retries: %v", err)
+	}
+
+	if callCount != 3 {
+		t.Errorf("Expected 3 calls, got %d", callCount)
+	}
+
+	expectedRate := decimal.NewFromFloat(1380.50)
+	if !client.GetRate().Equal(expectedRate) {
+		t.Errorf("Expected rate %v, got %v", expectedRate, client.GetRate())
 	}
 }

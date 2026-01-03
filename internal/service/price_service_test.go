@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"crypto_monitor/internal/domain"
 
@@ -16,7 +18,7 @@ func TestPriceService_UpdateUpbit(t *testing.T) {
 		{Symbol: "ETH", Price: decimal.NewFromInt(3000000), Exchange: "UPBIT"},
 	}
 
-	svc.UpdateUpbit(tickers)
+	svc.ProcessTickers(tickers)
 
 	btc := svc.GetData("BTC")
 	if btc == nil {
@@ -42,8 +44,8 @@ func TestPriceService_UpdateBitget(t *testing.T) {
 		{Symbol: "BTC", Price: decimal.NewFromFloat(35100.5), Exchange: "BITGET_F"},
 	}
 
-	svc.UpdateBitget(spotTickers)
-	svc.UpdateBitget(futureTickers)
+	svc.ProcessTickers(spotTickers)
+	svc.ProcessTickers(futureTickers)
 
 	btc := svc.GetData("BTC")
 	if btc.BitgetS == nil || btc.BitgetF == nil {
@@ -58,12 +60,12 @@ func TestPriceService_CalculatePremium(t *testing.T) {
 	svc.UpdateExchangeRate(decimal.NewFromInt(1400))
 
 	// Bitget spot: $35000 -> 49,000,000 KRW
-	svc.UpdateBitget([]*domain.Ticker{
+	svc.ProcessTickers([]*domain.Ticker{
 		{Symbol: "BTC", Price: decimal.NewFromInt(35000), Exchange: "BITGET_S"},
 	})
 
 	// Upbit: 50,000,000 KRW
-	svc.UpdateUpbit([]*domain.Ticker{
+	svc.ProcessTickers([]*domain.Ticker{
 		{Symbol: "BTC", Price: decimal.NewFromInt(50000000), Exchange: "UPBIT"},
 	})
 
@@ -103,7 +105,7 @@ func TestPriceService_GetAllData_Sorted(t *testing.T) {
 	svc := NewPriceService()
 
 	// Add in unsorted order
-	svc.UpdateUpbit([]*domain.Ticker{
+	svc.ProcessTickers([]*domain.Ticker{
 		{Symbol: "XRP", Price: decimal.NewFromInt(1000), Exchange: "UPBIT"},
 		{Symbol: "BTC", Price: decimal.NewFromInt(50000000), Exchange: "UPBIT"},
 		{Symbol: "ETH", Price: decimal.NewFromInt(3000000), Exchange: "UPBIT"},
@@ -117,5 +119,32 @@ func TestPriceService_GetAllData_Sorted(t *testing.T) {
 	// Should be sorted: BTC, ETH, XRP
 	if all[0].Symbol != "BTC" || all[1].Symbol != "ETH" || all[2].Symbol != "XRP" {
 		t.Errorf("Not sorted: %s, %s, %s", all[0].Symbol, all[1].Symbol, all[2].Symbol)
+	}
+}
+
+func TestPriceService_AsyncTickerChan(t *testing.T) {
+	svc := NewPriceService()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	svc.StartTickerProcessor(ctx)
+
+	tickers := []*domain.Ticker{
+		{Symbol: "BTC", Price: decimal.NewFromInt(50000000), Exchange: "UPBIT"},
+		{Symbol: "ETH", Price: decimal.NewFromInt(3000000), Exchange: "UPBIT"},
+	}
+
+	// Send to channel
+	svc.GetTickerChan() <- tickers
+
+	// Give it a moment to process
+	time.Sleep(100 * time.Millisecond)
+
+	btc := svc.GetData("BTC")
+	if btc == nil || btc.Upbit == nil {
+		t.Fatal("BTC data should be processed from channel")
+	}
+	if !btc.Upbit.Price.Equal(decimal.NewFromInt(50000000)) {
+		t.Errorf("Expected 50000000, got %v", btc.Upbit.Price)
 	}
 }

@@ -52,7 +52,8 @@ func main() {
 
 	// 서비스 초기화
 	priceService := service.NewPriceService()
-	slog.InfoContext(ctx, "✅ PriceService initialized")
+	priceService.StartTickerProcessor(ctx)
+	slog.InfoContext(ctx, "✅ PriceService initialized with ticker processor")
 
 	// 환율 클라이언트 초기화 및 시작
 	exchangeRateClient := infra.NewExchangeRateClientWithConfig(
@@ -66,39 +67,34 @@ func main() {
 	defer exchangeRateClient.Stop()
 	slog.InfoContext(ctx, "✅ ExchangeRateClient started")
 
-	// 심볼 목록 (예시 - 실제로는 설정에서 로드)
-	upbitSymbols := []string{"BTC", "ETH", "XRP", "SOL", "DOGE"}
-	bitgetSymbols := map[string]string{
-		"BTC":  "BTCUSDT",
-		"ETH":  "ETHUSDT",
-		"XRP":  "XRPUSDT",
-		"SOL":  "SOLUSDT",
-		"DOGE": "DOGEUSDT",
-	}
-
 	// Upbit Worker 초기화
-	upbitWorker := infra.NewUpbitWorker(upbitSymbols, priceService.UpdateUpbit)
-	if err := upbitWorker.Connect(ctx); err != nil {
-		slog.Error("Failed to connect Upbit", slog.Any("error", err))
+	if len(cfg.API.Upbit.Symbols) > 0 {
+		upbitWorker := infra.NewUpbitWorker(cfg.API.Upbit.Symbols, priceService.GetTickerChan())
+		if err := upbitWorker.Connect(ctx); err != nil {
+			slog.Error("Failed to connect Upbit", slog.Any("error", err))
+		}
+		defer upbitWorker.Disconnect()
+		slog.InfoContext(ctx, "✅ UpbitWorker started", slog.Any("symbols", cfg.API.Upbit.Symbols))
 	}
-	defer upbitWorker.Disconnect()
-	slog.InfoContext(ctx, "✅ UpbitWorker started")
 
-	// Bitget Spot Worker 초기화
-	bitgetSpotWorker := infra.NewBitgetSpotWorker(bitgetSymbols, priceService.UpdateBitget)
-	if err := bitgetSpotWorker.Connect(ctx); err != nil {
-		slog.Error("Failed to connect Bitget Spot", slog.Any("error", err))
-	}
-	defer bitgetSpotWorker.Disconnect()
-	slog.InfoContext(ctx, "✅ BitgetSpotWorker started")
+	// Bitget Worker 초기화
+	if len(cfg.API.Bitget.Symbols) > 0 {
+		// Bitget Spot
+		bitgetSpotWorker := infra.NewBitgetSpotWorker(cfg.API.Bitget.Symbols, priceService.GetTickerChan())
+		if err := bitgetSpotWorker.Connect(ctx); err != nil {
+			slog.Error("Failed to connect Bitget Spot", slog.Any("error", err))
+		}
+		defer bitgetSpotWorker.Disconnect()
+		slog.InfoContext(ctx, "✅ BitgetSpotWorker started")
 
-	// Bitget Futures Worker 초기화
-	bitgetFuturesWorker := infra.NewBitgetFuturesWorker(bitgetSymbols, priceService.UpdateBitget)
-	if err := bitgetFuturesWorker.Connect(ctx); err != nil {
-		slog.Error("Failed to connect Bitget Futures", slog.Any("error", err))
+		// Bitget Futures
+		bitgetFuturesWorker := infra.NewBitgetFuturesWorker(cfg.API.Bitget.Symbols, priceService.GetTickerChan())
+		if err := bitgetFuturesWorker.Connect(ctx); err != nil {
+			slog.Error("Failed to connect Bitget Futures", slog.Any("error", err))
+		}
+		defer bitgetFuturesWorker.Disconnect()
+		slog.InfoContext(ctx, "✅ BitgetFuturesWorker started")
 	}
-	defer bitgetFuturesWorker.Disconnect()
-	slog.InfoContext(ctx, "✅ BitgetFuturesWorker started")
 
 	// TODO: UI 초기화 (메인 윈도우 루프)
 

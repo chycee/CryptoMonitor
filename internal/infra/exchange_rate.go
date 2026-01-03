@@ -3,6 +3,7 @@ package infra
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -83,6 +84,12 @@ func (c *ExchangeRateClient) Start(ctx context.Context) error {
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("Exchange rate polling panic recovered", slog.Any("panic", r))
+			}
+		}()
+
 		ticker := time.NewTicker(c.pollInterval)
 		defer ticker.Stop()
 
@@ -102,18 +109,49 @@ func (c *ExchangeRateClient) Start(ctx context.Context) error {
 	return nil
 }
 
-// fetchRate fetches the current exchange rate from Dunamu API
+// fetchRate fetches the current exchange rate from Dunamu API with retry logic
 func (c *ExchangeRateClient) fetchRate(ctx context.Context) error {
+	var lastErr error
+	for i := 0; i < 3; i++ {
+		if i > 0 {
+			// Exponential backoff: 1s, 2s, 4s
+			delay := time.Duration(1<<uint(i-1)) * time.Second
+			slog.Info("Retrying exchange rate fetch", slog.Int("attempt", i), slog.Duration("delay", delay))
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(delay):
+			}
+		}
+
+		err := c.doFetch(ctx)
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+		slog.Warn("Exchange rate fetch attempt failed", slog.Int("attempt", i+1), slog.Any("error", err))
+	}
+	return lastErr
+}
+
+func (c *ExchangeRateClient) doFetch(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.apiURL, nil)
 	if err != nil {
 		return err
 	}
+
+	// Add browser-like User-Agent to avoid bot detection
+	req.Header.Set("User-Agent", DefaultUserAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -126,8 +164,7 @@ func (c *ExchangeRateClient) fetchRate(ctx context.Context) error {
 	}
 
 	if len(data) == 0 {
-		slog.Warn("Empty response from Dunamu API")
-		return nil
+		return fmt.Errorf("empty response from Dunamu API")
 	}
 
 	// Use basePrice (매매기준율) as the exchange rate
