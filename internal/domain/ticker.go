@@ -29,32 +29,56 @@ type MarketData struct {
 	IsFavorite bool             `json:"is_favorite"`
 }
 
-// GapPct calculates Futures vs Spot gap percentage
+// GapPct calculates Futures vs Spot gap percentage: 100 * (Future - Spot) / Spot
 func (m *MarketData) GapPct() *decimal.Decimal {
-	// TODO: Implement
-	return nil
+	if m.BitgetS == nil || m.BitgetF == nil {
+		return nil
+	}
+	if m.BitgetS.Price.IsZero() {
+		return nil
+	}
+
+	gap := m.BitgetF.Price.Sub(m.BitgetS.Price).Div(m.BitgetS.Price).Mul(decimal.NewFromInt(100))
+	return &gap
 }
 
 // IsBreakoutHigh returns true if price >= historical high
 func (m *MarketData) IsBreakoutHigh() bool {
-	// TODO: Implement
-	return false
+	if m.Upbit == nil || m.Upbit.HistoricalHigh == nil {
+		return false
+	}
+	return m.Upbit.Price.GreaterThanOrEqual(*m.Upbit.HistoricalHigh)
 }
 
 // IsBreakoutLow returns true if price <= historical low
 func (m *MarketData) IsBreakoutLow() bool {
-	// TODO: Implement
-	return false
+	if m.Upbit == nil || m.Upbit.HistoricalLow == nil {
+		return false
+	}
+	return m.Upbit.Price.LessThanOrEqual(*m.Upbit.HistoricalLow)
 }
 
 // BreakoutState returns "high", "low", or "normal"
 func (m *MarketData) BreakoutState() string {
-	// TODO: Implement
+	if m.IsBreakoutHigh() {
+		return "high"
+	}
+	if m.IsBreakoutLow() {
+		return "low"
+	}
 	return "normal"
 }
 
 // ChangeDirection returns "positive", "negative", or "neutral"
 func (m *MarketData) ChangeDirection() string {
-	// TODO: Implement
+	if m.Upbit == nil {
+		return "neutral"
+	}
+	if m.Upbit.ChangeRate.IsPositive() {
+		return "positive"
+	}
+	if m.Upbit.ChangeRate.IsNegative() {
+		return "negative"
+	}
 	return "neutral"
 }

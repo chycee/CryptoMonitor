@@ -7,8 +7,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config holds all application settings.
-// After being loaded via LoadConfig, this should be treated as READ-ONLY to ensure thread safety.
+// Config는 애플리케이션의 모든 설정을 담습니다.
+// LoadConfig로 로드된 후에는 스레드 안전성을 위해 읽기 전용으로 다뤄야 합니다.
 type Config struct {
 	App struct {
 		Name    string `yaml:"name"`
@@ -17,12 +17,17 @@ type Config struct {
 
 	API struct {
 		Upbit struct {
-			WSURL   string `yaml:"ws_url"`
-			RestURL string `yaml:"rest_url"`
+			WSURL     string `yaml:"ws_url"`
+			RestURL   string `yaml:"rest_url"`
+			AccessKey string `yaml:"access_key"`
+			SecretKey string `yaml:"secret_key"`
 		} `yaml:"upbit"`
 		Bitget struct {
-			WSURL   string `yaml:"ws_url"`
-			RestURL string `yaml:"rest_url"`
+			WSURL      string `yaml:"ws_url"`
+			RestURL    string `yaml:"rest_url"`
+			AccessKey  string `yaml:"access_key"`
+			SecretKey  string `yaml:"secret_key"`
+			Passphrase string `yaml:"passphrase"`
 		} `yaml:"bitget"`
 		ExchangeRate struct {
 			URL             string `yaml:"url"`
@@ -42,7 +47,7 @@ type Config struct {
 	} `yaml:"logging"`
 }
 
-// LoadConfig reads and parses the config file
+// LoadConfig는 설정 파일을 읽고 파싱합니다.
 func LoadConfig(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -54,5 +59,27 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, err
 	}
 
+	// 4대 원칙: 보안 우선 - 환경 변수 오버라이드 지원
+	overrideWithEnv(&cfg)
+
 	return &cfg, nil
+}
+
+// overrideWithEnv는 환경 변수가 존재할 경우 설정 값을 덮어씁니다.
+func overrideWithEnv(cfg *Config) {
+	if key := os.Getenv("CRYPTO_UPBIT_KEY"); key != "" {
+		cfg.API.Upbit.AccessKey = key
+	}
+	if secret := os.Getenv("CRYPTO_UPBIT_SECRET"); secret != "" {
+		cfg.API.Upbit.SecretKey = secret
+	}
+	if key := os.Getenv("CRYPTO_BITGET_KEY"); key != "" {
+		cfg.API.Bitget.AccessKey = key
+	}
+	if secret := os.Getenv("CRYPTO_BITGET_SECRET"); secret != "" {
+		cfg.API.Bitget.SecretKey = secret
+	}
+	if pass := os.Getenv("CRYPTO_BITGET_PASSPHRASE"); pass != "" {
+		cfg.API.Bitget.Passphrase = pass
+	}
 }

@@ -1,31 +1,36 @@
 # CryptoMonitor Configuration Example
-# Copy this to config.yaml and fill in secrets
+# 이 파일을 config.yaml로 복사한 후 실제 설정을 입력하세요.
+# 중요: 실제 config.yaml은 절대로 Git에 커밋하지 마세요!
 
 app:
   name: "CryptoMonitor"
-  version: "1.0.0"
+  version: "1.0.1"
 
 api:
   upbit:
     ws_url: "wss://api.upbit.com/websocket/v1"
     rest_url: "https://api.upbit.com"
+    # 추천: 환경 변수 사용 (CRYPTO_UPBIT_KEY, CRYPTO_UPBIT_SECRET)
+    access_key: "YOUR_UPBIT_ACCESS_KEY"
+    secret_key: "YOUR_UPBIT_SECRET_KEY"
   
   bitget:
     ws_url: "wss://ws.bitget.com/v2/ws/public"
     rest_url: "https://api.bitget.com"
-    # API Keys should be managed via Environment Variables or added here in local config
-    access_key: "YOUR_ACCESS_KEY"
-    secret_key: "YOUR_SECRET_KEY"
-    passphrase: "YOUR_PASSPHRASE"
+    # 추천: 환경 변수 사용 (CRYPTO_BITGET_KEY, CRYPTO_BITGET_SECRET, CRYPTO_BITGET_PASSPHRASE)
+    access_key: "YOUR_BITGET_ACCESS_KEY"
+    secret_key: "YOUR_BITGET_SECRET_KEY"
+    passphrase: "YOUR_BITGET_PASSPHRASE"
   
   exchange_rate:
-    url: "https://query1.finance.yahoo.com/v8/finance/chart/USDKRW=X"
+    # 두나무(업비트) 소스 - 높은 정밀도
+    url: "https://quotation-api-cdn.dunamu.com/v1/forex/recent?codes=FRX.KRWUSD"
     poll_interval_sec: 60
 
 ui:
   update_interval_ms: 100
   history_days: 10
-  gap_threshold: "5.0" # Use string for decimal precision in YAML if needed
+  gap_threshold: "5.0"
   theme: "dark"
 
 logging:

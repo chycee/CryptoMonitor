@@ -7,7 +7,6 @@ import (
 )
 
 func TestMarketData_GapPct(t *testing.T) {
-	// TODO: Implement actual calculation in ticker.go first
 	t.Run("Normal Calculation", func(t *testing.T) {
 		spot := Ticker{Price: decimal.NewFromInt(100)}
 		future := Ticker{Price: decimal.NewFromInt(105)}
@@ -17,8 +16,26 @@ func TestMarketData_GapPct(t *testing.T) {
 			BitgetF: &future,
 		}
 
-		_ = data.GapPct()
-		// assert gap is 5%
+		gap := data.GapPct()
+		if gap == nil || !gap.Equal(decimal.NewFromInt(5)) {
+			t.Errorf("Expected 5%%, got %v", gap)
+		}
+	})
+
+	t.Run("Safety: Nil Pointers", func(t *testing.T) {
+		data := MarketData{}
+		if data.GapPct() != nil {
+			t.Error("Should return nil when tickers are missing")
+		}
+	})
+
+	t.Run("Safety: Zero Price", func(t *testing.T) {
+		spot := Ticker{Price: decimal.Zero}
+		future := Ticker{Price: decimal.NewFromInt(105)}
+		data := MarketData{BitgetS: &spot, BitgetF: &future}
+		if data.GapPct() != nil {
+			t.Error("Should return nil when spot price is zero to avoid crash")
+		}
 	})
 }
 
@@ -32,8 +49,8 @@ func TestMarketData_IsBreakoutHigh(t *testing.T) {
 			},
 		}
 
-		if data.IsBreakoutHigh() {
-			// This will currently fail as it returns false (TODO)
+		if !data.IsBreakoutHigh() {
+			t.Error("Should detect breakout high")
 		}
 	})
 }

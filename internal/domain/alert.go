@@ -12,12 +12,19 @@ type AlertConfig struct {
 	active       bool
 }
 
-// NewAlertConfig creates a new alert configuration
+// NewAlertConfig creates a new alert configuration.
+// Direction is automatically determined based on currentPrice:
+// - UP: targetPrice > currentPrice (waiting for price to rise)
+// - DOWN: targetPrice < currentPrice (waiting for price to fall)
 func NewAlertConfig(symbol string, targetPrice, currentPrice decimal.Decimal, exchange string, isPersistent bool) *AlertConfig {
-	// TODO: Implement direction logic
+	direction := "UP"
+	if targetPrice.LessThan(currentPrice) {
+		direction = "DOWN"
+	}
 	return &AlertConfig{
 		Symbol:       symbol,
 		TargetPrice:  targetPrice,
+		Direction:    direction,
 		Exchange:     exchange,
 		IsPersistent: isPersistent,
 		active:       true,
@@ -34,8 +41,20 @@ func (a *AlertConfig) SetActive(active bool) {
 	a.active = active
 }
 
-// CheckCondition checks if alert condition is met
+// CheckCondition checks if alert condition is met.
+// Returns true when:
+// - Direction is UP and currentPrice >= targetPrice
+// - Direction is DOWN and currentPrice <= targetPrice
 func (a *AlertConfig) CheckCondition(currentPrice decimal.Decimal) bool {
-	// TODO: Implement
-	return false
+	if !a.active {
+		return false
+	}
+	switch a.Direction {
+	case "UP":
+		return currentPrice.GreaterThanOrEqual(a.TargetPrice)
+	case "DOWN":
+		return currentPrice.LessThanOrEqual(a.TargetPrice)
+	default:
+		return false
+	}
 }

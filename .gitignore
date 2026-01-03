@@ -19,4 +19,4 @@ go.work
 # Development Documentation (Local Only)
 CHANGELOG.md
 API_REFERENCE.md
-.agent/
+
