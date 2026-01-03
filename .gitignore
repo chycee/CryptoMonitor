@@ -6,7 +6,9 @@ cryptomonitor
 *.so
 *.dylib
 
-
+# Configuration (Secrets - tracked but overridable)
+# configs/config.yaml is tracked for deployment ease.
+# Sensitive keys should be provided via Env Vars.
 
 # OS files
 .DS_Store
@@ -15,6 +17,6 @@ Thumbs.db
 # Go
 go.work
 
-
-
-
+# Workflows (Local Only)
+.agent/
+.github/

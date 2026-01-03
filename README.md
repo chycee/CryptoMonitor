@@ -4,7 +4,7 @@
 
 ## 📋 개요 (Overview)
 
-CryptoMonitor는 업비트(Upbit)와 비트겟(Bitget)의 WebSocket API를 연동하여 실시간 시세를 수집하고, 거래소 간 가격 차이(Premium/Gap)를 정밀하게 계산하는 시스템입니다. 비동기 파이프라인 구조를 통해 대량의 시세 데이터를 지연 없이 처리합니다.
+CryptoMonitor는 업비트(Upbit)와 비트겟(Bitget)의 WebSocket API를 연동하여 실시간 시세를 수집합니다.
 
 ## 🔄 시스템 워크플로우 (Workflow)
 
